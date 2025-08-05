@@ -209,3 +209,4 @@ __marimo__/
 
 scratch.ipynb
 resource_pack_inator/output/**/*.json
+resource_pack_inator/output/**/*.csv
