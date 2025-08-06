@@ -39,15 +39,27 @@ def create_custom_item_models(inputs: pd.DataFrame, output_dir: Path):
 
 
          for i, item in filtered_inputs.iterrows():
+            item_ref = f"{namespace}:item/{item["name"]}"
+
             if item["mc_item"] == "bow":
-               pass
+               item_model_json = {"model": {"type": "minecraft:model", "model": item_ref}}
+               target_dir.joinpath(f"{item["name"]}.json").write_text(json.dumps(item_model_json, indent=3))
+
+               item_model_json = {"model": {"type": "minecraft:model", "model": f"{item_ref}_pulling_0"}}
+               target_dir.joinpath(f"{item["name"]}_pulling_0.json").write_text(json.dumps(item_model_json, indent=3))
+
+               item_model_json = {"model": {"type": "minecraft:model", "model": f"{item_ref}_pulling_1"}}
+               target_dir.joinpath(f"{item["name"]}_pulling_1.json").write_text(json.dumps(item_model_json, indent=3))
+
+               item_model_json = {"model": {"type": "minecraft:model", "model": f"{item_ref}_pulling_2"}}
+               target_dir.joinpath(f"{item["name"]}_pulling_2.json").write_text(json.dumps(item_model_json, indent=3))
+
 
             elif item["mc_item"] == "bundle":
                pass
 
             else:
-               item_model_json = {"model": {"type": "minecraft:model", "model": f"{namespace}:item/{item["name"]}"}}
-
+               item_model_json = {"model": {"type": "minecraft:model", "model": item_ref}}
                target_dir.joinpath(f"{item["name"]}.json").write_text(json.dumps(item_model_json, indent=3))
 
 
@@ -60,18 +72,34 @@ def create_mc_item_models(inputs: pd.DataFrame, output_dir: Path):
 
    for mc_item in inputs["mc_item"].drop_duplicates():
       custom_items = inputs[inputs["mc_item"] == mc_item]
-      cmd_cases = make_custom_model_data_cases(custom_items)
-      custom_name = make_custom_name_part(mc_item, custom_items)
-
-      if custom_name != {}: cmd_cases.insert(0, custom_name)
 
       if mc_item == "bow":
-         pass
+         cmd_cases = make_custom_model_data_cases(custom_items, bow=True)
+         custom_name = make_custom_name_part(mc_item, custom_items, mc_defaults, bow=True)
 
+         if custom_name != {}: cmd_cases.insert(0, custom_name)
+
+         mc_item_model = {
+            "model": {
+               "type": "minecraft:range_dispatch",
+               "property": "minecraft:custom_model_data",
+               "entries": cmd_cases,
+               "fallback": {}
+            }
+         }
+
+         mc_item_model["model"]["fallback"] = json.loads(mc_defaults.joinpath(f"{mc_item}.json").read_text())["model"]
+         mc_items_dir.joinpath(f"{mc_item}.json").write_text(json.dumps(mc_item_model, indent=3))
+      
       elif mc_item == "bundle":
          pass
 
       else:
+         cmd_cases = make_custom_model_data_cases(custom_items)
+         custom_name = make_custom_name_part(mc_item, custom_items, mc_defaults)
+
+         if custom_name != {}: cmd_cases.insert(0, custom_name)
+
          mc_item_model = {
             "model": {
                "type": "minecraft:range_dispatch",
@@ -94,35 +122,51 @@ def create_mc_item_models(inputs: pd.DataFrame, output_dir: Path):
             mc_items_dir.joinpath(f"{mc_item}.json").write_text(json.dumps(mc_item_model, indent=3))
 
 
-def make_custom_model_data_cases(inputs: pd.DataFrame) -> list[dict]:
+def make_custom_model_data_cases(inputs: pd.DataFrame, bow: bool = False, bundle: bool = False) -> list[dict]:
    cases = []
    for i, input in inputs.iterrows():
       custom_model_string = f"{input["namespace"]}:{input["type"]}/{f"{input["path"]}/" if pd.notna(input["path"]) else ""}{input["name"]}"
-      cases.append({
+      case = {
          "threshold": input["mc_item_index"], 
          "model": {
             "type": "minecraft:model", 
             "model": custom_model_string
          }
-      })
+      }
+
+      if bow:
+         case["model"] = get_bow_model(custom_model_string)
+
+      elif bundle:
+         pass
+
+      cases.append(case)
    return cases
 
-def make_custom_name_cases(inputs: pd.DataFrame) -> list[dict]:
+def make_custom_name_cases(inputs: pd.DataFrame, bow: bool = False, bundle: bool = False) -> list[dict]:
    cases = []
    for i, input in inputs.iterrows():
       if pd.notna(input["in_game_name"]):
          custom_model_string = f"{input["namespace"]}:{input["type"]}/{f"{input["path"]}/" if pd.notna(input["path"]) else ""}{input["name"]}"
-         cases.append({
+         case = {
             "when": input["in_game_name"], 
             "model": {
                "type": "minecraft:model", 
                "model": custom_model_string
             }
-         })
+         }
+
+         if bow:
+            case["model"] = get_bow_model(custom_model_string)
+
+         elif bundle:
+            pass
+
+         cases.append(case)
    return cases
 
-def make_custom_name_part(mc_item: str, inputs: pd.DataFrame) -> dict:
-   cases = make_custom_name_cases(inputs)
+def make_custom_name_part(mc_item: str, inputs: pd.DataFrame, mc_defaults: Path, bow: bool = False, bundle: bool = False) -> dict:
+   cases = make_custom_name_cases(inputs, bow=bow, bundle=bundle)
    if len(cases) > 0:
       return {
          "threshold": 0, 
@@ -131,14 +175,46 @@ def make_custom_name_part(mc_item: str, inputs: pd.DataFrame) -> dict:
             "property": "minecraft:component",
             "component": "minecraft:item_name",
             "cases": cases,
-            "fallback": {
-               "type": "minecraft:model",
-               "model": f"minecraft:item/{mc_item}"
-            }
+            "fallback": json.loads(mc_defaults.joinpath(f"{mc_item}.json").read_text())["model"]
          }
       }
 
    else: return {}
+
+def get_bow_model(custom_model_string: str) -> dict:
+   return {
+      "type": "minecraft:condition",
+      "property": "minecraft:using_item",
+      "on_false": {
+         "type": "minecraft:model",
+         "model": custom_model_string
+      },
+      "on_true": {
+         "type": "minecraft:range_dispatch",
+         "property": "minecraft:use_duration",
+         "scale": 0.05,
+         "entries": [
+         {
+            "model": {
+               "type": "minecraft:model",
+               "model": f"{custom_model_string}_pulling_1"
+            },
+            "threshold": 0.65
+         },
+         {
+            "model": {
+               "type": "minecraft:model",
+               "model": f"{custom_model_string}_pulling_2"
+            },
+            "threshold": 0.9
+         }
+         ],
+         "fallback": {
+         "type": "minecraft:model",
+         "model": f"{custom_model_string}_pulling_0"
+         }
+      }
+   }
 
 def clear_dir(p: Path):
    if p.is_file():

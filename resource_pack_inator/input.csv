@@ -110,7 +110,7 @@ custom_index,namespace,type,path,name,in_game_name,mc_item
 109,hc_nine,item,,ezed_kniezed_helmet,,carved_pumpkin
 110,hc_nine,item,,finaltrophy,,carved_pumpkin
 111,hc_nine,item,,gtwscar_pirate_hat,,carved_pumpkin
-112,hc_nine,item,,hotguy_bow,,bow
+112,hc_nine,item,,hotguy_bow,hOt gUY,bow
 113,hc_nine,item,,impulsebeard,,carved_pumpkin
 114,hc_nine,item,,impulse_axe_netherite,,netherite_axe
 115,hc_nine,item,,impulse_hardhat,,carved_pumpkin
