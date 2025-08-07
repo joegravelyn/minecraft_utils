@@ -12,7 +12,7 @@ def main():
 
    # Read input csv
    input_list = pd.read_csv(rpi_dir.joinpath("input.csv"))
-   input_list["mc_item_index"] = input_list.groupby("mc_item")["custom_index"].rank().astype(int)
+   input_list["mc_item_index"] = input_list[pd.notna(input_list["mc_item"])].groupby("mc_item")["custom_index"].rank().astype(int)
 
    input_list.to_csv(output_dir.joinpath("inputs_with_custom_index.csv"), index=False)
 
@@ -71,6 +71,8 @@ def create_mc_item_models(inputs: pd.DataFrame, output_dir: Path):
    mc_items_dir.mkdir(exist_ok=True, parents=True)
 
    for mc_item in inputs["mc_item"].drop_duplicates():
+      if pd.isna(mc_item): continue
+
       custom_items = inputs[inputs["mc_item"] == mc_item]
 
       if mc_item == "bow":
@@ -126,13 +128,25 @@ def create_mc_item_models(inputs: pd.DataFrame, output_dir: Path):
             }
          }
 
-
          if mc_item == "$ALL_MUSIC_DISCS$":
             discs = mc_defaults.glob("**/music_disc*.json")
             for d_file in discs:
                d = d_file.name.removesuffix(".json")
                mc_item_model["model"]["fallback"]["model"] = json.loads(mc_defaults.joinpath(d_file.name).read_text())["model"]
                mc_items_dir.joinpath(f"{d}.json").write_text(json.dumps(mc_item_model, indent=3))
+
+         elif mc_item == "painting":
+            paint_var = make_painting_variant_part(inputs[pd.notna(inputs["painting_variant"])], mc_defaults)
+            if custom_name != {}:
+               mc_item_model["model"]["entries"][0]["fallback"] = paint_var
+            else:
+               cmd_cases.insert(0, {
+                  "threshold": 0, 
+                  "model": paint_var
+               })
+
+            mc_item_model["model"]["fallback"] = json.loads(mc_defaults.joinpath("painting.json").read_text())["model"]
+            mc_items_dir.joinpath(f"{mc_item}.json").write_text(json.dumps(mc_item_model, indent=3))
 
          else:
             mc_item_model["model"]["fallback"] = json.loads(mc_defaults.joinpath(f"{mc_item}.json").read_text())["model"]
@@ -144,7 +158,7 @@ def make_custom_model_data_cases(inputs: pd.DataFrame, bow: bool = False, bundle
    for i, input in inputs.iterrows():
       custom_model_string = f"{input["namespace"]}:{input["type"]}/{f"{input["path"]}/" if pd.notna(input["path"]) else ""}{input["name"]}"
       case = {
-         "threshold": input["mc_item_index"], 
+         "threshold": int(input["mc_item_index"]), 
          "model": {
             "type": "minecraft:model", 
             "model": custom_model_string
@@ -194,6 +208,34 @@ def make_custom_name_part(mc_item: str, inputs: pd.DataFrame, mc_defaults: Path,
             "cases": cases,
             "fallback": json.loads(mc_defaults.joinpath(f"{mc_item}.json").read_text())["model"]
          }
+      }
+
+   else: return {}
+
+def make_custom_painting_variant_cases(inputs: pd.DataFrame) -> list[dict]:
+   cases = []
+   for i, input in inputs.iterrows():
+      custom_model_string = f"{input["namespace"]}:{input["type"]}/{f"{input["path"]}/" if pd.notna(input["path"]) else ""}{input["name"]}"
+      case = {
+         "when": input["painting_variant"], 
+         "model": {
+            "type": "minecraft:model", 
+            "model": custom_model_string
+         }
+      }
+
+      cases.append(case)
+   return cases
+
+def make_painting_variant_part(inputs: pd.DataFrame, mc_defaults: Path) -> dict:
+   cases = make_custom_painting_variant_cases(inputs)
+   if len(cases) > 0:
+      return {
+         "type": "minecraft:select",
+         "property": "minecraft:component",
+         "component": "minecraft:painting/variant",
+         "cases": cases,
+         "fallback": json.loads(mc_defaults.joinpath("painting.json").read_text())["model"]
       }
 
    else: return {}
