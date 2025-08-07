@@ -132,7 +132,7 @@ def create_mc_item_models(inputs: pd.DataFrame, output_dir: Path):
             discs = mc_defaults.glob("**/music_disc*.json")
             for d_file in discs:
                d = d_file.name.removesuffix(".json")
-               mc_item_model["model"]["fallback"]["model"] = json.loads(mc_defaults.joinpath(d_file.name).read_text())["model"]
+               mc_item_model["model"]["fallback"] = json.loads(mc_defaults.joinpath(d_file.name).read_text())["model"]
                mc_items_dir.joinpath(f"{d}.json").write_text(json.dumps(mc_item_model, indent=3))
 
          elif mc_item == "painting":
@@ -204,7 +204,7 @@ def make_custom_name_part(mc_item: str, inputs: pd.DataFrame, mc_defaults: Path,
          "model": {
             "type": "minecraft:select",
             "property": "minecraft:component",
-            "component": "minecraft:item_name",
+            "component": "minecraft:custom_name",
             "cases": cases,
             "fallback": json.loads(mc_defaults.joinpath(f"{mc_item}.json").read_text())["model"]
          }
@@ -217,7 +217,7 @@ def make_custom_painting_variant_cases(inputs: pd.DataFrame) -> list[dict]:
    for i, input in inputs.iterrows():
       custom_model_string = f"{input["namespace"]}:{input["type"]}/{f"{input["path"]}/" if pd.notna(input["path"]) else ""}{input["name"]}"
       case = {
-         "when": input["painting_variant"], 
+         "when": f"minecraft:{input["painting_variant"]}", 
          "model": {
             "type": "minecraft:model", 
             "model": custom_model_string
