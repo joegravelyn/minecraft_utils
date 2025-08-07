@@ -2,7 +2,7 @@ from pathlib import Path
 import pandas as pd
 import json
 
-rp_dir = Path(r"D:\OneDrive\Minecraft\TPS\resourcepacks\TPS\assets")
+rp_dir = Path(input("Assets folder: "))
 
 items = []
 item_index = 1
