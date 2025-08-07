@@ -91,8 +91,25 @@ def create_mc_item_models(inputs: pd.DataFrame, output_dir: Path):
          mc_item_model["model"]["fallback"] = json.loads(mc_defaults.joinpath(f"{mc_item}.json").read_text())["model"]
          mc_items_dir.joinpath(f"{mc_item}.json").write_text(json.dumps(mc_item_model, indent=3))
       
+
       elif mc_item == "bundle":
-         pass
+         cmd_cases = make_custom_model_data_cases(custom_items, bundle=True)
+         custom_name = make_custom_name_part(mc_item, custom_items, mc_defaults, bundle=True)
+
+         if custom_name != {}: cmd_cases.insert(0, custom_name)
+
+         mc_item_model = {
+            "model": {
+               "type": "minecraft:range_dispatch",
+               "property": "minecraft:custom_model_data",
+               "entries": cmd_cases,
+               "fallback": {}
+            }
+         }
+
+         mc_item_model["model"]["fallback"] = json.loads(mc_defaults.joinpath(f"{mc_item}.json").read_text())["model"]
+         mc_items_dir.joinpath(f"{mc_item}.json").write_text(json.dumps(mc_item_model, indent=3))
+
 
       else:
          cmd_cases = make_custom_model_data_cases(custom_items)
@@ -138,7 +155,7 @@ def make_custom_model_data_cases(inputs: pd.DataFrame, bow: bool = False, bundle
          case["model"] = get_bow_model(custom_model_string)
 
       elif bundle:
-         pass
+         case["model"] = get_bundle_model(custom_model_string)
 
       cases.append(case)
    return cases
@@ -160,7 +177,7 @@ def make_custom_name_cases(inputs: pd.DataFrame, bow: bool = False, bundle: bool
             case["model"] = get_bow_model(custom_model_string)
 
          elif bundle:
-            pass
+            case["model"] = get_bundle_model(custom_model_string)
 
          cases.append(case)
    return cases
@@ -213,6 +230,25 @@ def get_bow_model(custom_model_string: str) -> dict:
          "type": "minecraft:model",
          "model": f"{custom_model_string}_pulling_0"
          }
+      }
+   }
+
+def get_bundle_model(custom_model_string: str) -> dict:
+   return {
+      "type": "minecraft:range_dispatch",
+      "property": "minecraft:bundle/fullness",
+      "entries": [
+      {
+         "threshold": 1,
+         "model": {
+            "type": "minecraft:model",
+            "model": f"{custom_model_string}_full"
+         }
+      }
+      ],
+      "fallback": {
+         "type": "minecraft:model",
+         "model": f"{custom_model_string}_empty"
       }
    }
 
