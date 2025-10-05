@@ -32,9 +32,11 @@ custom_df = pd.DataFrame(items)
 
 mc_models = []
 mc_dir = rp_dir.joinpath("minecraft")
-model_folder = namespace_folder.joinpath("items")
+model_folder = mc_dir.joinpath("items")
 for model_file in model_folder.glob("**/*.json"):
    mc_item = model_file.name.removesuffix(".json")
+   
+   if mc_item == "shield": continue
 
    model_json = json.loads(model_file.read_text())
 
@@ -45,7 +47,7 @@ for model_file in model_folder.glob("**/*.json"):
    else:
       mc_item_type = None
 
-   if model_json["model"]["type"] == "minecraft:range_dispatch":
+   if str(model_json["model"]["type"]).endswith("range_dispatch"):
       for r in model_json["model"]["entries"]:
          if r["threshold"] != 0:
             # print(r)
@@ -56,4 +58,4 @@ mc_df = pd.DataFrame(mc_models)
 
 
 df = pd.merge(left=mc_df, right=custom_df, how="outer", on="custom_key")
-print(df.to_string())
+df.to_csv(Path.cwd().joinpath("resource_pack_inator", "generated.csv"), index=False)
