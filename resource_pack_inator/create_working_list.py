@@ -2,8 +2,10 @@ from pathlib import Path
 import pandas as pd
 import json
 
+# Input asset folder that contains custom models and minecraft models with overrides
 rp_dir = Path(input("Assets folder: "))
 
+# Look through custom item models to get list of all custom items
 items = []
 item_index = 1
 for namespace_folder in rp_dir.iterdir():
@@ -29,7 +31,7 @@ for namespace_folder in rp_dir.iterdir():
 
 custom_df = pd.DataFrame(items)
 
-
+# Look through minecraft models with overrides to get custom item to minecraft item mappings
 mc_models = []
 mc_dir = rp_dir.joinpath("minecraft")
 model_folder = mc_dir.joinpath("items")
@@ -56,6 +58,6 @@ for model_file in model_folder.glob("**/*.json"):
 
 mc_df = pd.DataFrame(mc_models)
 
-
+# Put the two together and save to a csv
 df = pd.merge(left=mc_df, right=custom_df, how="outer", on="custom_key")
 df.to_csv(Path.cwd().joinpath("resource_pack_inator", "generated.csv"), index=False)
