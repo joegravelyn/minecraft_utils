@@ -3,12 +3,32 @@ import json
 import pyperclip
 
 def main():
-   file = Path(input("File to format: "))
-   content = json.loads(file.read_text())
-   result = make_pretty_json(content)
+   requesting_input = True
+   while requesting_input:
+      file = Path(input("File or folder to format: "))
+
+      if file.exists():
+         if file.is_file():
+            if file.suffix == ".json":
+               content = json.loads(file.read_text())
+               result = make_pretty_json(content)
+               file.write_text(result)
+               print("Done")
+            else:
+               print("File is not .json")
+
+         elif file.is_dir():
+            for f in file.glob("**/*.json"):
+               content = json.loads(f.read_text())
+               result = make_pretty_json(content)
+               f.write_text(result)
+            print("Done")
+      
+      else:
+         print("Cannot find file or folder with given input")
+
    # pyperclip.copy(result)
    # print(result)
-   file.write_text(result)
 
 def make_pretty_json(val, level: int = 1, compact: bool = False, indent: int = 3) -> str:
    location = "" if compact else "\n"
