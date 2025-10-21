@@ -38,7 +38,7 @@ model_folder = mc_dir.joinpath("items")
 for model_file in model_folder.glob("**/*.json"):
    mc_item = model_file.name.removesuffix(".json")
    
-   if mc_item == "shield": continue
+   if mc_item in ["bow", "bundle", "painting", "shield"]: continue
 
    model_json = json.loads(model_file.read_text())
 
@@ -49,6 +49,7 @@ for model_file in model_folder.glob("**/*.json"):
    else:
       mc_item_type = None
 
+   # print(mc_item)
    if str(model_json["model"]["type"]).endswith("range_dispatch"):
       for r in model_json["model"]["entries"]:
          if r["threshold"] != 0:
@@ -60,4 +61,4 @@ mc_df = pd.DataFrame(mc_models)
 
 # Put the two together and save to a csv
 df = pd.merge(left=mc_df, right=custom_df, how="outer", on="custom_key")
-df.to_csv(Path.cwd().joinpath("resource_pack_inator", "generated.csv"), index=False)
+df.to_csv(Path.cwd().joinpath("resource_pack_inator", "input", "__generated.csv"), index=False)
