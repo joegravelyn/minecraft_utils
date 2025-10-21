@@ -4,7 +4,7 @@ from pathlib import Path
 # Fields with "_" prefix are optional with a default (usually "minecraft")
 
 files = {
-   "_custom": {
+   "_general": {
       "__num",
       "item_namespace",
       "__item_path",
