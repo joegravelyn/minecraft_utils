@@ -34,6 +34,8 @@ def create_item_model(input_dir: Path, output_dir: Path):
       if len(custom_items) > 0:
          cmd_cases, name_cases = create_cases(custom_items)
 
+         fallback = json.loads(output_dir.parent.joinpath("mc_defaults").joinpath(f"{mc_item}.json").read_text())["model"]
+
          if len(name_cases) > 0:
             cmd_cases.insert(0, {
                "threshold": 0, 
@@ -41,7 +43,8 @@ def create_item_model(input_dir: Path, output_dir: Path):
                   "type": "minecraft:select",
                   "property": "minecraft:component",
                   "component": "minecraft:custom_name",
-                  "cases": name_cases
+                  "cases": name_cases,
+                  "fallback": fallback
                }
             })
 
@@ -49,7 +52,7 @@ def create_item_model(input_dir: Path, output_dir: Path):
             "type": "minecraft:range_dispatch",
             "property": "minecraft:custom_model_data",
             "entries": cmd_cases,
-            "fallback": json.loads(output_dir.parent.joinpath("mc_defaults").joinpath(f"{mc_item}.json").read_text())["model"]
+            "fallback": fallback
             }
          }
 
