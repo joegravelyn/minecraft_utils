@@ -19,17 +19,17 @@ def create_item_model(input_dir: Path, output_dir: Path):
 
       cmd_cases, name_cases = create_cases(input_list)
 
-
-      if len(name_cases) > 0:
-         cmd_cases.insert(0, {
-            "threshold": 0, 
-            "model": {
-               "type": "minecraft:select",
-               "property": "minecraft:component",
-               "component": "minecraft:custom_name",
-               "cases": name_cases
-            }
-         })
+      # if len(name_cases) > 0:
+      #    cmd_cases.insert(0, {
+      #       "threshold": 0, 
+      #       "model": {
+      #          "type": "minecraft:select",
+      #          "property": "minecraft:component",
+      #          "component": "minecraft:custom_name",
+      #          "cases": name_cases,
+      #          "fallback": {}
+      #       }
+      #    })
 
       item_model = {"model": {
          "type": "minecraft:range_dispatch",
