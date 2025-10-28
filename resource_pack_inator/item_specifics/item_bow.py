@@ -17,7 +17,7 @@ def create_item_model(input_dir: Path, output_dir: Path):
       mc_items_dir = output_dir.joinpath("minecraft", "items")
       mc_items_dir.mkdir(exist_ok=True, parents=True)
 
-      cmd_cases, name_cases = create_cases(input_list)
+      cmd_cases, name_cases, user_list = create_cases(input_list)
 
       fallback = json.loads(output_dir.parent.joinpath("mc_defaults").joinpath("bow.json").read_text())["model"]
 
@@ -44,10 +44,13 @@ def create_item_model(input_dir: Path, output_dir: Path):
       if __name__ == "__main__": print(item_model)
       mc_items_dir.joinpath("bow.json").write_text(json.dumps(item_model, indent=2))
 
+      update_user_list_file(user_list, output_dir)
 
-def create_cases(inputs: pd.DataFrame) -> tuple[list, list]:
+
+def create_cases(inputs: pd.DataFrame) -> tuple[list, list, list]:
    cmd_cases = []
    name_cases = []
+   user_list = []
 
    max_num = max(inputs["__num"])
 
@@ -81,7 +84,18 @@ def create_cases(inputs: pd.DataFrame) -> tuple[list, list]:
       if pd.notna(input["__in_game_name"]):
          name_cases.append({"when": input["__in_game_name"], "model": i_model})
 
-   return cmd_cases, name_cases
+      user_list.append(["bow", i_num, input["__in_game_name"], i_model_standby])
+
+   return cmd_cases, name_cases, user_list
+
+def update_user_list_file(user_list: list, output_dir: Path):
+   if __name__ == "__main__": print(user_list)
+   ul_file = output_dir.joinpath("user_list.csv")
+   ul_df = pd.read_csv(ul_file)
+   ul_df = ul_df[ul_df["minecraft_item"] != "bow"]
+   update_df = pd.DataFrame(user_list, columns=["minecraft_item", "custom_model_data", "custom_name", "custom_model"])
+   ul_df = pd.concat([ul_df, update_df])
+   ul_df.to_csv(ul_file, index=False)
 
 if __name__ == "__main__":
    main()

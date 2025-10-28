@@ -31,38 +31,40 @@ def create_item_model(input_dir: Path, output_dir: Path):
       custom_items = input_list[input_list["__minecraft_item"] == mc_item]
       custom_items["mc_item_index"] = custom_items[pd.notna(input_list["__minecraft_item"])].groupby("__minecraft_item")["__num"].rank().astype(int)
 
-      if len(custom_items) > 0:
-         cmd_cases, name_cases = create_cases(custom_items)
+      cmd_cases, name_cases, user_list = create_cases(custom_items)
 
-         fallback = json.loads(output_dir.parent.joinpath("mc_defaults").joinpath(f"{mc_item}.json").read_text())["model"]
+      fallback = json.loads(output_dir.parent.joinpath("mc_defaults").joinpath(f"{mc_item}.json").read_text())["model"]
 
-         if len(name_cases) > 0:
-            cmd_cases.insert(0, {
-               "threshold": 0, 
-               "model": {
-                  "type": "minecraft:select",
-                  "property": "minecraft:component",
-                  "component": "minecraft:custom_name",
-                  "cases": name_cases,
-                  "fallback": fallback
-               }
-            })
-
-         item_model = {"model": {
-            "type": "minecraft:range_dispatch",
-            "property": "minecraft:custom_model_data",
-            "entries": cmd_cases,
-            "fallback": fallback
+      if len(name_cases) > 0:
+         cmd_cases.insert(0, {
+            "threshold": 0, 
+            "model": {
+               "type": "minecraft:select",
+               "property": "minecraft:component",
+               "component": "minecraft:custom_name",
+               "cases": name_cases,
+               "fallback": fallback
             }
+         })
+
+      item_model = {"model": {
+         "type": "minecraft:range_dispatch",
+         "property": "minecraft:custom_model_data",
+         "entries": cmd_cases,
+         "fallback": fallback
          }
+      }
 
-         if __name__ == "__main__": print(item_model)
-         mc_items_dir.joinpath(f"{mc_item}.json").write_text(json.dumps(item_model, indent=2))
+      if __name__ == "__main__": print(item_model)
+      mc_items_dir.joinpath(f"{mc_item}.json").write_text(json.dumps(item_model, indent=2))
+   
+      update_user_list_file(mc_item, user_list, output_dir)
 
 
-def create_cases(inputs: pd.DataFrame) -> tuple[list, list]:
+def create_cases(inputs: pd.DataFrame) -> tuple[list, list, list]:
    cmd_cases = []
    name_cases = []
+   user_list = []
 
    max_num = max(inputs["mc_item_index"])
 
@@ -77,7 +79,19 @@ def create_cases(inputs: pd.DataFrame) -> tuple[list, list]:
       if pd.notna(input["__in_game_name"]):
          name_cases.append({"when": input["__in_game_name"], "model": {"type": "minecraft:model", "model": i_model}})
 
-   return cmd_cases, name_cases
+      user_list.append(["", i_num, input["__in_game_name"], i_model])
+
+   return cmd_cases, name_cases, user_list
+
+def update_user_list_file(mc_item: str, user_list: list, output_dir: Path):
+   if __name__ == "__main__": print(user_list)
+   ul_file = output_dir.joinpath("user_list.csv")
+   ul_df = pd.read_csv(ul_file)
+   ul_df = ul_df[ul_df["minecraft_item"] != mc_item]
+   update_df = pd.DataFrame(user_list, columns=["minecraft_item", "custom_model_data", "custom_name", "custom_model"])
+   update_df["minecraft_item"] = mc_item
+   ul_df = pd.concat([ul_df, update_df])
+   ul_df.to_csv(ul_file, index=False)
 
 if __name__ == "__main__":
    main()
