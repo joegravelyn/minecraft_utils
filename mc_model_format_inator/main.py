@@ -49,7 +49,7 @@ def make_pretty_json(val, level: int = 1, compact: bool = False, indent: int = 3
    elif val_type is str:
       return f"\"{val}\""
 
-   elif val_type is int or val_type is float:
+   elif val_type is int or val_type is float or val_type is bool:
       return f"{val}"
    
    else:
