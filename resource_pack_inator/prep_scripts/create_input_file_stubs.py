@@ -46,7 +46,14 @@ files = {
       "item_name",
       "_painting_namespace",
       "__painting_path",
-      "painting_name"
+      "painting_name",
+      "width",
+      "height",
+      "_title_text",
+      "__title_color",
+      "_author_text",
+      "__author_color",
+      "_placeable"
    },
    "shield": {
       "__num",
@@ -67,7 +74,7 @@ def main():
       if file.exists():
          text = file.read_text().split("\n")
          cols = text[0].split(",")
-         if set(cols).difference(cols_def) == set():
+         if set(cols_def).difference(cols) == set():
             continue
          else:
             cols.extend(cols_def.difference(cols))
