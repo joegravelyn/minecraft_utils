@@ -17,7 +17,6 @@ def creating_painting_dp_files(input_dir: Path, output_dir: Path):
 
    for namespace in input_list["_painting_namespace"].drop_duplicates():
       if pd.isna(namespace): continue
-      if namespace == "minecraft": continue
 
       custom_items = input_list[input_list["_painting_namespace"] == namespace]
 
@@ -25,12 +24,14 @@ def creating_painting_dp_files(input_dir: Path, output_dir: Path):
 
       paint_var_dir = output_dir.joinpath(namespace, "painting_variant")
       paint_var_dir.mkdir(exist_ok=True, parents=True)
+      clear_dir(paint_var_dir)
 
       paint_recipe_dir = output_dir.joinpath(namespace, "recipe", "painting_variant")
       paint_recipe_dir.mkdir(exist_ok=True, parents=True)
+      clear_dir(paint_recipe_dir)
       
       for i, input in custom_items.iterrows():
-         p_namespace = input["_painting_namespace"]
+         p_namespace = namespace
          p_path = f"{input["__painting_path"]}/" if pd.notna(input["__painting_path"]) else ""
          p_name = input["painting_name"]
          p_fqn = f"{p_namespace}:{p_path}{p_name}"
@@ -52,7 +53,13 @@ def creating_painting_dp_files(input_dir: Path, output_dir: Path):
             "title": p_title,
             "author": p_author
          }
-         paint_var_dir.joinpath(f"{p_name}.json").write_text(json.dumps(paint_var, indent=2))
+         
+         if p_path == "":
+            paint_path_dir = paint_var_dir
+         else:
+            paint_path_dir = paint_var_dir.joinpath(*p_path.split("/"))
+            paint_path_dir.mkdir(exist_ok=True, parents=True)
+         paint_path_dir.joinpath(f"{p_name}.json").write_text(json.dumps(paint_var, indent=2))
 
          paint_recipe = {"type": "minecraft:stonecutting", "ingredient": "minecraft:painting", "result": {"components": {
             "minecraft:painting/variant": p_fqn}, "count": 1, "id": "minecraft:painting"}}
@@ -63,9 +70,22 @@ def creating_painting_dp_files(input_dir: Path, output_dir: Path):
    if len(placeable_list) > 0:
       placeable_dir = output_dir.joinpath("minecraft", "tags", "painting_variant")
       placeable_dir.mkdir(exist_ok=True, parents=True)
+      clear_dir(placeable_dir)
 
       placeable_dir.joinpath("placeable.json").write_text(json.dumps({"replace": False, "values": placeable_list}, indent=2))
 
+
+def clear_dir(p: Path):
+   for d in p.iterdir():
+      delete_dir(d)
+
+def delete_dir(p: Path):
+   if p.is_file():
+      p.unlink()
+   else:
+      for d in p.iterdir():
+         delete_dir(d)
+      p.rmdir()
 
 if __name__ == "__main__":
    main()

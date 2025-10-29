@@ -2,7 +2,7 @@ from pathlib import Path
 import pandas as pd
 import json
 
-from item_specifics import item_bow, item_bundle, item_music_disc, item_painting
+from item_specifics import item_bow, item_bundle, item_music_disc, item_painting, dp_painting
 
 def main():
    rpi_dir = Path.cwd().joinpath("resource_pack_inator")
@@ -13,6 +13,7 @@ def main():
    item_bundle.create_item_model(input_dir, output_dir)
    item_music_disc.create_item_model(input_dir, output_dir)
    item_painting.create_item_model(input_dir, output_dir)
+   dp_painting.creating_painting_dp_files(input_dir, output_dir)
 
    create_item_model(input_dir, output_dir)
 
