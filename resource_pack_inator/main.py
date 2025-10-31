@@ -8,6 +8,10 @@ def main():
    rpi_dir = Path.cwd().joinpath("resource_pack_inator")
    input_dir = rpi_dir.joinpath("input")
    output_dir = rpi_dir.joinpath("output")
+   
+   mc_items_dir = output_dir.joinpath("minecraft", "items")
+   mc_items_dir.mkdir(exist_ok=True, parents=True)
+   clear_dir(mc_items_dir)
 
    item_bow.create_item_model(input_dir, output_dir)
    item_bundle.create_item_model(input_dir, output_dir)
@@ -19,9 +23,6 @@ def main():
 
 
 def create_item_model(input_dir: Path, output_dir: Path):
-   mc_items_dir = output_dir.joinpath("minecraft", "items")
-   mc_items_dir.mkdir(exist_ok=True, parents=True)
-
    input_list = pd.read_csv(input_dir.joinpath("_general.csv"))
 
    for mc_item in input_list["__minecraft_item"].drop_duplicates():
@@ -57,7 +58,7 @@ def create_item_model(input_dir: Path, output_dir: Path):
       }
 
       if __name__ == "__main__": print(item_model)
-      mc_items_dir.joinpath(f"{mc_item}.json").write_text(json.dumps(item_model, indent=2))
+      output_dir.joinpath("minecraft", "items", f"{mc_item}.json").write_text(json.dumps(item_model, indent=2))
    
       update_user_list_file(mc_item, user_list, output_dir)
 
@@ -93,6 +94,19 @@ def update_user_list_file(mc_item: str, user_list: list, output_dir: Path):
    update_df["minecraft_item"] = mc_item
    ul_df = pd.concat([ul_df, update_df])
    ul_df.to_csv(ul_file, index=False)
+
+
+def clear_dir(p: Path):
+   for d in p.iterdir():
+      delete_dir(d)
+
+def delete_dir(p: Path):
+   if p.is_file():
+      p.unlink()
+   else:
+      for d in p.iterdir():
+         delete_dir(d)
+      p.rmdir()
 
 if __name__ == "__main__":
    main()
