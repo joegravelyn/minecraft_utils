@@ -43,10 +43,12 @@ def create_item_model(input_dir: Path, output_dir: Path):
 
       discs = output_dir.parent.joinpath("mc_defaults").glob("**/music_disc_*.json")
       for d_file in discs:
-         print(d_file)
+         if __name__ == "__main__": print(d_file)
          fallback = json.loads(d_file.read_text())["model"]
          item_model["model"]["fallback"] = fallback
          mc_items_dir.joinpath(d_file.name).write_text(json.dumps(item_model, indent=2))
+
+      create_custom_item(cmd_cases, output_dir)
       
       update_user_list_file(user_list, output_dir)
 
@@ -68,7 +70,7 @@ def create_cases(inputs: pd.DataFrame) -> tuple[list, list, list]:
       if pd.notna(input["__in_game_name"]):
          name_cases.append({"when": input["__in_game_name"], "model": {"type": "minecraft:model", "model": i_model}})
 
-      user_list.append(["music_disc", i_num, input["__in_game_name"], i_model])
+      user_list.append(["music_disc", i_num, input["__in_game_name"], i_model.replace(":item/", ":")])
 
    return cmd_cases, name_cases, user_list
 
@@ -80,6 +82,21 @@ def update_user_list_file(user_list: list, output_dir: Path):
    update_df = pd.DataFrame(user_list, columns=["minecraft_item", "custom_model_data", "custom_name", "custom_model"])
    ul_df = pd.concat([ul_df, update_df])
    ul_df.to_csv(ul_file, index=False)
+
+def create_custom_item(custom_models: list[dict], output_dir: Path):
+   for cm in custom_models:
+      threshold = cm.pop("threshold", 0)
+      if threshold > 0:
+         full_model = str(cm["model"]["model"])
+         colon = full_model.find(":")
+         namespace = full_model[:colon]
+         model_path = full_model[colon + 1:].split("/")
+         model_path.remove("item")
+         model_path[-1] = model_path[-1] + ".json"
+         
+         model_file = output_dir.joinpath(namespace, "items", *model_path)
+         model_file.parent.mkdir(exist_ok=True, parents=True)
+         model_file.write_text(json.dumps(cm, indent=2))
 
 if __name__ == "__main__":
    main()

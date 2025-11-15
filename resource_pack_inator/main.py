@@ -3,6 +3,7 @@ import pandas as pd
 import json
 
 from item_specifics import item_bow, item_bundle, item_music_disc, item_painting, dp_painting
+pd.options.mode.chained_assignment = None
 
 def main():
    rpi_dir = Path.cwd().joinpath("resource_pack_inator")
@@ -31,7 +32,7 @@ def create_item_model(input_dir: Path, output_dir: Path):
       if mc_item in [d.name.removesuffix(".json") for d in output_dir.parent.joinpath("mc_defaults").glob("**/music_disc_*.json")]: continue
 
       custom_items = input_list[input_list["__minecraft_item"] == mc_item]
-      custom_items["mc_item_index"] = custom_items[pd.notna(input_list["__minecraft_item"])].groupby("__minecraft_item")["__num"].rank().astype(int)
+      custom_items["mc_item_index"] = custom_items.loc[pd.notna(input_list["__minecraft_item"])].groupby("__minecraft_item")["__num"].rank().astype(int)
 
       cmd_cases, name_cases, user_list = create_cases(custom_items)
 
@@ -57,8 +58,10 @@ def create_item_model(input_dir: Path, output_dir: Path):
          }
       }
 
-      if __name__ == "__main__": print(item_model)
+      # if __name__ == "__main__": print(item_model)
       output_dir.joinpath("minecraft", "items", f"{mc_item}.json").write_text(json.dumps(item_model, indent=2))
+
+      create_custom_item(cmd_cases, output_dir)
    
       update_user_list_file(mc_item, user_list, output_dir)
 
@@ -81,12 +84,12 @@ def create_cases(inputs: pd.DataFrame) -> tuple[list, list, list]:
       if pd.notna(input["__in_game_name"]):
          name_cases.append({"when": input["__in_game_name"], "model": {"type": "minecraft:model", "model": i_model}})
 
-      user_list.append(["", i_num, input["__in_game_name"], i_model])
+      user_list.append(["", i_num, input["__in_game_name"], i_model.replace(":item/", ":")])
 
    return cmd_cases, name_cases, user_list
 
 def update_user_list_file(mc_item: str, user_list: list, output_dir: Path):
-   if __name__ == "__main__": print(user_list)
+   # if __name__ == "__main__": print(user_list)
    ul_file = output_dir.joinpath("user_list.csv")
    ul_df = pd.read_csv(ul_file)
    ul_df = ul_df[ul_df["minecraft_item"] != mc_item]
@@ -94,6 +97,21 @@ def update_user_list_file(mc_item: str, user_list: list, output_dir: Path):
    update_df["minecraft_item"] = mc_item
    ul_df = pd.concat([ul_df, update_df])
    ul_df.to_csv(ul_file, index=False)
+
+def create_custom_item(custom_models: list[dict], output_dir: Path):
+   for cm in custom_models:
+      threshold = cm.pop("threshold", 0)
+      if threshold > 0:
+         full_model = str(cm["model"]["model"])
+         colon = full_model.find(":")
+         namespace = full_model[:colon]
+         model_path = full_model[colon + 1:].split("/")
+         model_path.remove("item")
+         model_path[-1] = model_path[-1] + ".json"
+         
+         model_file = output_dir.joinpath(namespace, "items", *model_path)
+         model_file.parent.mkdir(exist_ok=True, parents=True)
+         model_file.write_text(json.dumps(cm, indent=2))
 
 
 def clear_dir(p: Path):

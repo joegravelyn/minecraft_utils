@@ -41,8 +41,10 @@ def create_item_model(input_dir: Path, output_dir: Path):
          }
       }
 
-      if __name__ == "__main__": print(item_model)
+      # if __name__ == "__main__": print(item_model)
       mc_items_dir.joinpath("bundle.json").write_text(json.dumps(item_model, indent=2))
+
+      create_custom_item(cmd_cases, output_dir)
       
       update_user_list_file(user_list, output_dir)
 
@@ -60,12 +62,14 @@ def create_cases(inputs: pd.DataFrame) -> tuple[list, list, list]:
       i_full_path = f"{input["item_namespace"]}:item/{i_path}"
       i_model_empty = f"{i_full_path}{input["model_empty"]}"
       i_model_full = f"{i_full_path}{input["model_filled"]}"
+      i_name = f"{i_full_path}{input["__item_name"]}"
 
       i_model = {
          "type": "minecraft:range_dispatch",
          "property": "minecraft:bundle/fullness",
          "entries": [{"threshold": 1, "model": {"type": "minecraft:model", "model": i_model_full}}],
-         "fallback": {"type": "minecraft:model", "model": i_model_empty}
+         "fallback": {"type": "minecraft:model", "model": i_model_empty},
+         "_name": i_name
       }
 
       cmd_cases.append({"threshold": i_num, "model": i_model})
@@ -73,18 +77,33 @@ def create_cases(inputs: pd.DataFrame) -> tuple[list, list, list]:
       if pd.notna(input["__in_game_name"]):
          name_cases.append({"when": input["__in_game_name"], "model": i_model})
 
-      user_list.append(["bundle", i_num, input["__in_game_name"], i_model_empty])
+      user_list.append(["bundle", i_num, input["__in_game_name"], i_name.replace(":item/", ":")])
 
    return cmd_cases, name_cases, user_list
 
 def update_user_list_file(user_list: list, output_dir: Path):
-   if __name__ == "__main__": print(user_list)
+   # if __name__ == "__main__": print(user_list)
    ul_file = output_dir.joinpath("user_list.csv")
    ul_df = pd.read_csv(ul_file)
    ul_df = ul_df[ul_df["minecraft_item"] != "bundle"]
    update_df = pd.DataFrame(user_list, columns=["minecraft_item", "custom_model_data", "custom_name", "custom_model"])
    ul_df = pd.concat([ul_df, update_df])
    ul_df.to_csv(ul_file, index=False)
+
+def create_custom_item(custom_models: list[dict], output_dir: Path):
+   for cm in custom_models:
+      threshold = cm.pop("threshold", 0)
+      if threshold > 0:
+         full_model = str(cm["model"]["_name"])
+         colon = full_model.find(":")
+         namespace = full_model[:colon]
+         model_path = full_model[colon + 1:].split("/")
+         model_path.remove("item")
+         model_path[-1] = model_path[-1] + ".json"
+         
+         model_file = output_dir.joinpath(namespace, "items", *model_path)
+         model_file.parent.mkdir(exist_ok=True, parents=True)
+         model_file.write_text(json.dumps(cm, indent=2))
 
 if __name__ == "__main__":
    main()
