@@ -213,3 +213,4 @@ resource_pack_inator/output/**/*.csv
 resource_pack_inator/mc_defaults/**/*.json
 resource_pack_inator/generated.csv
 resource_pack_inator/input/*.csv
+stat_inator/config.json
