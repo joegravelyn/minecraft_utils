@@ -18,10 +18,12 @@ def main():
    existing_df = existing_df.groupby(["player_guid", "group", "stat"], as_index=False)["value"].sum()
    
    combined = df.merge(existing_df, how="left", on=["player_guid", "group", "stat"], suffixes=["_new", "_old"])
+   combined["value_old"] = combined["value_old"].fillna(0)
    combined["value"] = combined["value_new"] - combined["value_old"]
    combined = combined.drop(["value_new", "value_old"], axis=1)
    combined = combined[combined["value"] != 0]
 
+   print(f"Saving {cur_date.strftime("%Y%m%d_%H%M%S")}.csv")
    combined.to_csv(Path(configs["out"]).joinpath(f"{cur_date.strftime("%Y%m%d_%H%M%S")}.csv"), index=False)
 
 
