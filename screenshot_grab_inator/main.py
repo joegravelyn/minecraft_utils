@@ -11,6 +11,9 @@ def main(check_all = False):
    configs = json.loads((Path(__file__).resolve().parent.joinpath("config.json").read_text()))
    
    target_dir = Path(configs["target_dir"])
+   if target_dir == Path(""):
+      print("Target directory is not configured properly.")
+      return
    if not target_dir.exists(): target_dir.mkdir(parents=True)
 
    list_dir = target_dir.joinpath("list.csv")
