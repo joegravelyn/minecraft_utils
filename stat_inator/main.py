@@ -12,16 +12,17 @@ def main():
    if df is None: return
    
    if df.empty:
-      df = pd.DataFrame([(cur_date, "filler", pd.NA, "filler", 0)], columns=["timestamp", "player_guid", "group", "stat", "value"])
+      combined = pd.DataFrame([(cur_date, "filler", pd.NA, "filler", 0)], columns=["timestamp", "player_guid", "group", "stat", "value"])
 
-   existing_df = pd.concat((pd.read_csv(f) for f in Path(configs["out"]).glob("*.csv")))
-   existing_df = existing_df.groupby(["player_guid", "group", "stat"], as_index=False)["value"].sum()
-   
-   combined = df.merge(existing_df, how="left", on=["player_guid", "group", "stat"], suffixes=["_new", "_old"])
-   combined["value_old"] = combined["value_old"].fillna(0)
-   combined["value"] = combined["value_new"] - combined["value_old"]
-   combined = combined.drop(["value_new", "value_old"], axis=1)
-   combined = combined[combined["value"] != 0]
+   else:
+      existing_df = pd.concat((pd.read_csv(f) for f in Path(configs["out"]).glob("*.csv")))
+      existing_df = existing_df.groupby(["player_guid", "group", "stat"], as_index=False)["value"].sum()
+      
+      combined = df.merge(existing_df, how="left", on=["player_guid", "group", "stat"], suffixes=["_new", "_old"])
+      combined["value_old"] = combined["value_old"].fillna(0)
+      combined["value"] = combined["value_new"] - combined["value_old"]
+      combined = combined.drop(["value_new", "value_old"], axis=1)
+      combined = combined[combined["value"] != 0]
 
    print(f"Saving {cur_date.strftime("%Y%m%d_%H%M%S")}.csv")
    combined.to_csv(Path(configs["out"]).joinpath(f"{cur_date.strftime("%Y%m%d_%H%M%S")}.csv"), index=False)
