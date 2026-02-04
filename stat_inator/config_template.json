@@ -4,5 +4,6 @@
    "user": "",
    "pass": "",
    "stats_dir": "",
-   "out": ""
+   "out": "",
+   "whitelist": ""
 }
