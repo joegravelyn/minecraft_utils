@@ -215,3 +215,4 @@ resource_pack_inator/generated.csv
 resource_pack_inator/input/*.csv
 stat_inator/config.json
 screenshot_grab_inator/config.json
+dsm_stat_grab_inator/config.json
