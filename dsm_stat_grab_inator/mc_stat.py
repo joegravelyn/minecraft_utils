@@ -16,15 +16,21 @@ def main():
       return
    
    local_dir = configs["out"]
-   last_check_date = datetime.fromtimestamp(max([f.stat().st_mtime for f in Path(local_dir).glob("*.json")]))
+   if any(local_dir.iterdir()):
+      last_check_date = datetime.fromtimestamp(max([f.stat().st_mtime for f in local_dir.glob("*.json")]))
+   else:
+      last_check_date = datetime(2026, 1, 1, 0, 0)
    
    files = sftp.listdir_attr(configs["stats_dir"])
    for f in files:
       time = datetime.fromtimestamp(f.st_mtime) if f.st_mtime is not None else cur_date
       if time >= last_check_date:
          remote_file = configs["stats_dir"] + f.filename
-         local_file = local_dir + f.filename.removesuffix(".json") + "_" + cur_date.strftime('%Y%m%d_%H%M%S') + ".json"
+         local_file = local_dir.joinpath(f.filename.removesuffix(".json") + "_" + cur_date.strftime('%Y%m%d_%H%M%S') + ".json")
          sftp.get(remote_file, local_file)
+
+   sftp.close()
+   trans.close()
 
 if __name__ == "__main__":
    main()
