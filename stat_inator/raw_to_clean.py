@@ -68,7 +68,7 @@ GROUP BY
       existing = pd.DataFrame(conn.execute(query))
 
       # Concat existing and new data, sorted by dims and timestamp
-      fact = pd.concat([existing, new]).sort_values(by=["dim_guid_id", "dim_type_id", "dim_stat_id", "timestamp"])
+      fact = pd.concat([existing, new], ignore_index=True).sort_values(by=["dim_guid_id", "dim_type_id", "dim_stat_id", "timestamp"])
 
       # Add check if each dim is equal to prior row
       fact["guid_check"] = fact["dim_guid_id"].eq(fact["dim_guid_id"].shift())
@@ -78,7 +78,7 @@ GROUP BY
       # Add check if all dims are equal to prior row
       fact["check"] = sum([fact["guid_check"], fact["type_check"], fact["stat_check"]])
 
-      # Create value column that is just the delta between current and prior row
+      # Create value column that is the delta between current and prior row
       fact["value"] = fact["snap"] - fact["snap"].shift()
 
       # For rows where not all dims are equal to prior row, overwrite delta with raw value
