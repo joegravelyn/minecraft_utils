@@ -3,7 +3,7 @@ import json
 import pandas as pd
 from sqlalchemy import create_engine
 
-def main():
+def load_raw_into_sql():
    configs = json.loads((Path(__file__).resolve().parent.joinpath("config.json").read_text()))
    dump_dir = Path(configs["file_dump"])
    archive_dir = Path(configs["file_archive"])
@@ -36,4 +36,4 @@ def main():
 
 
 if __name__ == "__main__":
-   main()
+   load_raw_into_sql()

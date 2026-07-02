@@ -3,7 +3,7 @@ import json
 import pandas as pd
 from sqlalchemy import Engine, create_engine, text
 
-def main():
+def clean_data_in_sql():
    configs = json.loads((Path(__file__).resolve().parent.joinpath("config.json").read_text()))
 
    engine = create_engine('mssql+pyodbc://@' + configs["sql_server"] + '/' + configs["sql_db"] + '?trusted_connection=yes&driver=ODBC+Driver+17+for+SQL+Server')
@@ -27,9 +27,11 @@ def get_new_dim(engine: Engine, dim: str):
       raw = pd.DataFrame(result)
 
       if existing.empty:
+         print(f"{raw.count(axis=1)} new {dim}(s)")
          raw.to_sql(con=engine, schema="dbo", name=f"dim_{dim}", if_exists="append", index=False)
       else:
          new = pd.concat([raw, existing]).drop_duplicates(keep=False)
+         print(f"{new.count(axis=1)} new {dim}(s)")
          new.to_sql(con=engine, schema="dbo", name=f"dim_{dim}", if_exists="append", index=False)
 
 
@@ -87,7 +89,8 @@ GROUP BY
       # Filter out 0 and existing values
       fact = fact.loc[(fact["value"] != 0) & (fact["timestamp"] > "2026-01-01 00:00:00"), ["dim_guid_id", "dim_type_id", "dim_stat_id", "timestamp", "value"]]
 
+      print(f"{fact.count(axis=1)} new fact rows")
       fact.to_sql(con=engine, schema="dbo", name="fact_value", if_exists="append", index=False)
 
 if __name__ == "__main__":
-   main()
+   clean_data_in_sql()
